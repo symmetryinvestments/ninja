@@ -1652,6 +1652,9 @@ TEST_F(BuildWithLogTest, NotInLogButOnDisk) {
   // Because it's not in the log, it should not be up-to-date until
   // we build again.
   EXPECT_TRUE(builder_.AddTarget("out1", &err));
+#ifdef SYMMETRY
+  EXPECT_TRUE(builder_.AlreadyUpToDate());
+#else
   EXPECT_FALSE(builder_.AlreadyUpToDate());
 
   command_runner_.commands_ran_.clear();
@@ -1660,6 +1663,7 @@ TEST_F(BuildWithLogTest, NotInLogButOnDisk) {
   EXPECT_TRUE(builder_.AddTarget("out1", &err));
   EXPECT_TRUE(builder_.Build(&err));
   EXPECT_TRUE(builder_.AlreadyUpToDate());
+#endif
 }
 
 TEST_F(BuildWithLogTest, RebuildAfterFailure) {
@@ -1701,10 +1705,14 @@ TEST_F(BuildWithLogTest, RebuildAfterFailure) {
 
   // Run again, should rerun even though the output file is up to date on disk
   EXPECT_TRUE(builder_.AddTarget("out1", &err));
+#ifdef SYMMETRY
+  EXPECT_TRUE(builder_.AlreadyUpToDate());
+#else
   EXPECT_FALSE(builder_.AlreadyUpToDate());
   EXPECT_TRUE(builder_.Build(&err));
   EXPECT_EQ(1u, command_runner_.commands_ran_.size());
   EXPECT_EQ("", err);
+#endif
 }
 
 TEST_F(BuildWithLogTest, RebuildWithNoInputs) {
@@ -1758,6 +1766,9 @@ TEST_F(BuildWithLogTest, RestatTest) {
 
   fs_.Create("in", "");
 
+#ifdef SYMMETRY
+  string err;
+#else
   // Do a pre-build so that there's commands in the log for the outputs,
   // otherwise, the lack of an entry in the build log will cause out3 to rebuild
   // regardless of restat.
@@ -1774,6 +1785,8 @@ TEST_F(BuildWithLogTest, RestatTest) {
   fs_.Tick();
 
   fs_.Create("in", "");
+#endif
+
   // "cc" touches out1, so we should build out2.  But because "true" does not
   // touch out2, we should cancel the build of out3.
   EXPECT_TRUE(builder_.AddTarget("out3", &err));
@@ -3001,7 +3014,11 @@ TEST_F(BuildWithDepsLogTest, RestatMissingDepfileDepslog) {
   fs_.Create("header.h", "");
 
   RebuildTarget("out", manifest, "build_log", "ninja_deps");
+#ifdef SYMMETRY
+  ASSERT_EQ(1u, command_runner_.commands_ran_.size());
+#else
   ASSERT_EQ(2u, command_runner_.commands_ran_.size());
+#endif
 
   // Sanity: this rebuild should be NOOP
   RebuildTarget("out", manifest, "build_log", "ninja_deps");
@@ -3639,10 +3656,16 @@ TEST_F(BuildWithLogTest, DyndepBuildDiscoverRestat) {
   ASSERT_EQ("", err);
   EXPECT_TRUE(builder_.Build(&err));
   ASSERT_EQ("", err);
+#ifdef SYMMETRY
+  ASSERT_EQ(2u, command_runner_.commands_ran_.size());
+#else
   ASSERT_EQ(3u, command_runner_.commands_ran_.size());
+#endif
   EXPECT_EQ("cp dd-in dd", command_runner_.commands_ran_[0]);
   EXPECT_EQ("true", command_runner_.commands_ran_[1]);
+#ifndef SYMMETRY
   EXPECT_EQ("cat out1 > out2", command_runner_.commands_ran_[2]);
+#endif
 
   command_runner_.commands_ran_.clear();
   state_.Reset();

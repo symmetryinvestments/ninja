@@ -32,6 +32,7 @@ else()
 		add_compile_options(-fdiagnostics-color)
 	endif()
 endif()
+add_compile_definitions(SYMMETRY)
 
 # --- optional re2c
 find_program(RE2C re2c)
