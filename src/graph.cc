@@ -342,6 +342,10 @@ bool DependencyScan::RecomputeOutputDirty(const Edge* edge,
         EXPLAIN("command line changed for %s", output->path().c_str());
         return true;
       }
+#ifdef SYMMETRY
+      // ignore mtime of an existing .ninja_log entry
+      // (for reggae's --dub-objs-dir and re-using 'foreign' artifacts)
+#else
       if (most_recent_input && entry->mtime < most_recent_input->mtime()) {
         // May also be dirty due to the mtime in the log being older than the
         // mtime of the most recent input.  This can occur even when the mtime
@@ -352,11 +356,17 @@ bool DependencyScan::RecomputeOutputDirty(const Edge* edge,
                 entry->mtime, most_recent_input->mtime());
         return true;
       }
+#endif
     }
+#ifdef SYMMETRY
+    // don't require an existing .ninja_log entry
+    // (for reggae's --dub-objs-dir and re-using 'foreign' artifacts)
+#else
     if (!entry && !generator) {
       EXPLAIN("command line not found in log for %s", output->path().c_str());
       return true;
     }
+#endif
   }
 
   return false;
