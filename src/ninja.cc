@@ -222,6 +222,8 @@ void Usage(const BuildConfig& config) {
 "  --version      print ninja version (\"%s\")\n"
 "  -v, --verbose  show all command lines while building\n"
 "  --quiet        don't show progress status, just command output\n"
+"  --cp           enable critical-path scheduler based on previous build times\n"
+"                 (schedule slowest targets first; may require huge peak RAM!)\n"
 "\n"
 "  -C DIR   change to DIR before doing anything else\n"
 "  -f FILE  specify input build file [default=build.ninja]\n"
@@ -1417,12 +1419,13 @@ int ReadFlags(int* argc, char*** argv,
               Options* options, BuildConfig* config) {
   DeferGuessParallelism deferGuessParallelism(config);
 
-  enum { OPT_VERSION = 1, OPT_QUIET = 2 };
+  enum { OPT_VERSION = 1, OPT_QUIET = 2, OPT_ENABLE_CP = 3 };
   const option kLongOptions[] = {
     { "help", no_argument, NULL, 'h' },
     { "version", no_argument, NULL, OPT_VERSION },
     { "verbose", no_argument, NULL, 'v' },
     { "quiet", no_argument, NULL, OPT_QUIET },
+    { "cp", no_argument, NULL, OPT_ENABLE_CP },
     { NULL, 0, NULL, 0 }
   };
 
@@ -1494,6 +1497,9 @@ int ReadFlags(int* argc, char*** argv,
       case OPT_VERSION:
         printf("%s\n", kNinjaVersion);
         return 0;
+      case OPT_ENABLE_CP:
+        config->enable_critical_path_scheduler = true;
+        break;
       case 'h':
       default:
         deferGuessParallelism.Refresh();

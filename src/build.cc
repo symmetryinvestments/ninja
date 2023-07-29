@@ -795,7 +795,8 @@ bool Builder::AlreadyUpToDate() const {
 
 bool Builder::Build(string* err) {
   assert(!AlreadyUpToDate());
-  plan_.PrepareQueue(scan_.build_log());
+  plan_.PrepareQueue(config_.enable_critical_path_scheduler ? scan_.build_log()
+                                                            : NULL);
 
   status_->PlanHasTotalEdges(plan_.command_edge_count());
   int pending_commands = 0;
